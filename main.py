@@ -3,8 +3,9 @@ import sys
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from functions.call_function import call_function  # 🧠 import dispatcher
 
-# Hardcoded String
+# Hardcoded system prompt
 system_prompt = """
 You are a helpful AI coding agent.
 
@@ -32,6 +33,7 @@ schema_get_files_info = types.FunctionDeclaration(
         },
     ),
 )
+
 # Schema for 'get_file_content'
 schema_get_file_content = types.FunctionDeclaration(
     name="get_file_content",
@@ -46,6 +48,7 @@ schema_get_file_content = types.FunctionDeclaration(
         },
     ),
 )
+
 # Schema for 'run_python'
 schema_run_python = types.FunctionDeclaration(
     name="run_python_file",
@@ -60,6 +63,7 @@ schema_run_python = types.FunctionDeclaration(
         },
     ),
 )
+
 # Schema for 'write_file'
 schema_write_file = types.FunctionDeclaration(
     name="write_file",
@@ -78,7 +82,8 @@ schema_write_file = types.FunctionDeclaration(
         },
     ),
 )
-# Available functions for Gemini AI
+
+# Tools available to the model
 available_functions = types.Tool(
     function_declarations=[
         schema_get_files_info,
@@ -87,21 +92,20 @@ available_functions = types.Tool(
         schema_write_file,
     ]
 )
-# Load API key and initialize Gemini client
+
+# Load environment and create Gemini client
 load_dotenv()
 api_key = os.environ.get("GEMINI_API_KEY")
 client = genai.Client(api_key=api_key)
 
-# Parse command-line arguments
-arguments = sys.argv[1:]  # Skip the script name
+# Parse CLI arguments
+arguments = sys.argv[1:]
 verbose_flag = False
 
-# Check for verbose flag and remove it
 if "--verbose" in arguments:
     verbose_flag = True
     arguments.remove("--verbose")
 
-# Require exactly one remaining argument (the prompt)
 if len(arguments) != 1:
     print("Usage: script.py <prompt> [--verbose]")
     sys.exit(1)
@@ -111,23 +115,30 @@ messages = [
     types.Content(role="User", parts=[types.Part(text=user_prompt)])
 ]
 
-# Generate content using Gemini
+# Ask Gemini
 response = client.models.generate_content(
     model="gemini-2.0-flash-001",
     contents=messages,
     config=types.GenerateContentConfig(
         tools=[available_functions],
-        system_instruction=system_prompt
-    )
+        system_instruction=system_prompt,
+    ),
 )
 
+# Usage metadata
 prompt_token_count = response.usage_metadata.prompt_token_count
 candidates_token_count = response.usage_metadata.candidates_token_count
 
-# Output
+# Response handling
 if response.function_calls:
     for function_call_part in response.function_calls:
-        print(f"Calling function: {function_call_part.name}({function_call_part.args})")
+        function_call_result = call_function(function_call_part, verbose=verbose_flag)
+
+        if not function_call_result.parts or not function_call_result.parts[0].function_response:
+            raise RuntimeError("Function call failed or returned malformed content")
+
+        if verbose_flag:
+            print(f"-> {function_call_result.parts[0].function_response.response}")
 else:
     if verbose_flag:
         print(f"User prompt: {user_prompt}")
