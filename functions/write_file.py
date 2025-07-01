@@ -1,4 +1,24 @@
 from pathlib import Path
+from google.genai import types
+
+# Schema for 'write_file'
+schema_write_file = types.FunctionDeclaration(
+    name="write_file",
+    description="Creates or overwrites a text file in the working directory with the provided content.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="Relative path to the file to create or overwrite.",
+            ),
+            "content": types.Schema(
+                type=types.Type.STRING,
+                description="Text content to write into the file.",
+            ),
+        },
+    ),
+)
 
 def write_file(working_directory, file_path, content):
     try:

@@ -1,4 +1,20 @@
 from pathlib import Path
+from google.genai import types
+
+# Schema for 'get_file_content'
+schema_get_file_content = types.FunctionDeclaration(
+    name="get_file_content",
+    description="Reads and returns the contents of a text file located within the working directory. Output is truncated to 10,000 characters.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="Relative path to the file to read, from the working directory.",
+            ),
+        },
+    ),
+)
 
 def get_file_content(working_directory, file_path):
     try:

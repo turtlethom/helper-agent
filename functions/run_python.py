@@ -1,5 +1,21 @@
 import subprocess
 from pathlib import Path
+from google.genai import types
+
+# Schema for 'run_python'
+schema_run_python = types.FunctionDeclaration(
+    name="run_python_file",
+    description="Executes a Python file within the working directory and returns the output. Only .py files are allowed.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="Relative path to the Python file to execute. Must end in .py and reside in the working directory.",
+            ),
+        },
+    ),
+)
 
 def run_python_file(working_directory, file_path):
     try:

@@ -1,8 +1,18 @@
-from functions.get_files_info import get_files_info
-from functions.get_file_content import get_file_content
-from functions.run_python import run_python_file
-from functions.write_file import write_file
+from functions.get_files_info import schema_get_files_info, get_files_info
+from functions.get_file_content import schema_get_file_content, get_file_content
+from functions.run_python import schema_run_python, run_python_file
+from functions.write_file import schema_write_file, write_file
 from google.genai import types
+
+# Tools available to the model
+available_functions = types.Tool(
+    function_declarations=[
+        schema_get_files_info,
+        schema_get_file_content,
+        schema_run_python,
+        schema_write_file,
+    ]
+)
 
 def call_function(function_call_part, verbose=False):
     function_name = function_call_part.name
