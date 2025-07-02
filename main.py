@@ -5,6 +5,7 @@ from google import genai
 from google.genai import types
 from functions.call_function import available_functions, call_function
 from prompt import system_prompt
+from constants import *
 
 # Load environment and create Gemini client
 def setup_client():
@@ -40,13 +41,7 @@ def handle_response(response, prompt, verbose):
             print(f"Response tokens: {candidates_token_count}")
         print(response.text or "[No text response]")
 
-def get_gemini_response(client, prompt):
-    messages = [types.Content(
-        role="User",
-        parts=[types.Part(text=prompt)]
-        )
-    ]
-    # Ask Gemini
+def get_gemini_response(client, messages):
     return client.models.generate_content(
         model="gemini-2.0-flash-001",
         contents=messages,
@@ -55,11 +50,30 @@ def get_gemini_response(client, prompt):
             system_instruction=system_prompt,
         ),
     )
+
+def handle_agent_loop(client, prompt, verbose):
+    messages = [types.Content(
+        role="User",
+        parts=[types.Part(text=prompt)]
+        )
+    ]
+    for iter in range(MAX_ITER):
+        response = get_gemini_response(client, messages)
+        for candidate in response.candidates:
+            messages.append(candidate.content)
+        if response.function_calls:
+            for function_call_part in response.function_calls:
+                function_result = call_function(function_call_part, verbose=verbose)
+                messages.append(function_result)
+        else:
+            print("Final response:")
+            print(response.text or "[No text response]")
+            break
 def main():
     client = setup_client()
     user_prompt, verbose = parse_args()
-    response = get_gemini_response(client, user_prompt)
-    handle_response(response, user_prompt, verbose)
+    handle_agent_loop(client, user_prompt, verbose)
+    # handle_response(response, user_prompt, verbose)
 
 if __name__ == "__main__":
     main()
