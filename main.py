@@ -43,7 +43,7 @@ def handle_response(response, prompt, verbose):
 def get_gemini_response(client, prompt):
     messages = [types.Content(
         role="User",
-        parts=[types.Part(text=user_prompt)]
+        parts=[types.Part(text=prompt)]
         )
     ]
     # Ask Gemini
